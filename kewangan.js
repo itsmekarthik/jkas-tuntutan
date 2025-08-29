@@ -1,5 +1,5 @@
-// API base URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// API base URL - use relative path for production
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
 
 // Global variable to store table data
 let tableData = [];
@@ -132,7 +132,7 @@ async function loadTableData(filters = {}) {
             params.append('perkhidmatan', filters.perkhidmatan);
         }
         
-        const url = `/api/tuntutan?${params.toString()}`;
+        const url = `${API_BASE_URL}/tuntutan?${params.toString()}`;
         console.log('Fetching table data from:', url);
         
         const response = await fetch(url);
@@ -190,7 +190,7 @@ async function updateChart() {
 // Separate function for updating chart data only
 async function updateChartData(view, month, year) {
     try {
-        let url = `/api/chart-data?view=${view}`;
+        let url = `${API_BASE_URL}/chart-data?view=${view}`;
         
         if (month) {
             url += `&month=${month}`;
@@ -360,7 +360,7 @@ function populateYearDropdowns() {
 // Function to load parlimen options from API
 async function loadParlimenOptions() {
     try {
-        const response = await fetch('/api/parlimen-list');
+        const response = await fetch(`${API_BASE_URL}/parlimen-list`);
         const parlimenList = await response.json();
         
         const parlimenSelect = document.getElementById('parlimen');
