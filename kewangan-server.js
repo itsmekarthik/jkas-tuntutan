@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 // Enable CORS for all routes
 app.use(cors());
@@ -33,11 +33,28 @@ async function connectDB() {
         console.log('Connected to SQL Server database: JKAS');
     } catch (err) {
         console.error('Database connection failed:', err);
+        // Don't crash the app if database connection fails
+        console.log('Application will continue to run without database connection');
     }
 }
 
 // Initialize database connection
 connectDB();
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        server: 'Kewangan Dashboard',
+        port: port
+    });
+});
+
+// Serve the main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'kewangan.html'));
+});
 
 // API endpoint to get tuntutan data
 app.get('/api/tuntutan', async (req, res) => {
