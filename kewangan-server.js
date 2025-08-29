@@ -3,8 +3,15 @@ const sql = require('mssql');
 const cors = require('cors');
 const path = require('path');
 
+console.log('Starting Kewangan Dashboard Server...');
+console.log('Node version:', process.version);
+console.log('Platform:', process.platform);
+console.log('Environment:', process.env.NODE_ENV || 'development');
+
 const app = express();
 const port = process.env.PORT || 3001;
+
+console.log('Using port:', port);
 
 // Enable CORS for all routes
 app.use(cors());
@@ -47,8 +54,27 @@ app.get('/api/health', (req, res) => {
         status: 'OK',
         timestamp: new Date().toISOString(),
         server: 'Kewangan Dashboard',
-        port: port
+        port: port,
+        nodeVersion: process.version,
+        platform: process.platform,
+        uptime: process.uptime(),
+        memory: process.memoryUsage()
     });
+});
+
+// Simple test endpoint
+app.get('/test', (req, res) => {
+    res.send(`
+        <html>
+            <body>
+                <h1>Kewangan Server is Running!</h1>
+                <p>Port: ${port}</p>
+                <p>Time: ${new Date().toISOString()}</p>
+                <p>Node: ${process.version}</p>
+                <a href="/kewangan.html">Go to Main App</a>
+            </body>
+        </html>
+    `);
 });
 
 // Serve the main page
@@ -369,10 +395,55 @@ app.get('/api/debug-categories/:year', async (req, res) => {
     }
 });
 
-// Start server
-app.listen(port, () => {
-    console.log(`Kewangan server running at http://localhost:${port}`);
+// Catch-all route for debugging
+app.get('*', (req, res) => {
+    console.log('Unhandled route accessed:', req.path);
+    res.status(404).send(`
+        <html>
+            <body>
+                <h1>404 - Route Not Found</h1>
+                <p>Path: ${req.path}</p>
+                <p>Available routes:</p>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/test">Test Page</a></li>
+                    <li><a href="/api/health">Health Check</a></li>
+                    <li><a href="/kewangan.html">Main App</a></li>
+                </ul>
+            </body>
+        </html>
+    `);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Express error:', err);
+    res.status(500).json({
+        error: 'Internal Server Error',
+        message: err.message,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Start server with better error handling for Azure
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Kewangan server running on port ${port}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Server started at: ${new Date().toISOString()}`);
     console.log(`Open http://localhost:${port}/kewangan.html to view the application`);
+}).on('error', (err) => {
+    console.error('Server failed to start:', err);
+    process.exit(1);
+});
+
+// Add global error handlers
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    process.exit(1);
 });
 
 // Handle graceful shutdown
